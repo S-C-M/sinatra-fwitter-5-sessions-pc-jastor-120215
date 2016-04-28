@@ -5,16 +5,8 @@ class ApplicationController < Sinatra::Base
   configure do
     set :public_folder, 'public'
     set :views, 'app/views'
-  end
-  
-  helpers do
-    def logged_in?
-      session[:user_id]
-    end
-    
-     def current_user
-      User.find(session[:user_id])
-    end
+    enable :sessions
+    set :session_secret, "fwitter_secret"
   end
 
   get '/' do
@@ -33,7 +25,7 @@ class ApplicationController < Sinatra::Base
   end
 
   post '/tweet' do
-    @user = User.find_by(:user_id => session[:user_id])
+    user = User.find_by(:id => session[:user_id])
     tweet = Tweet.new(:user => user, :status => params[:status])
     tweet.save
     redirect '/'
@@ -45,9 +37,12 @@ class ApplicationController < Sinatra::Base
   end
 
   post '/sign-up' do 
-    @user = User.new(:username => params[:username], :email => params[:email])
-    @user.save
-    redirect '/'
+    user = User.new(:username => params[:username], :password => params[:password])
+    if user.save
+      redirect '/login'
+    else
+      redirect '/failure'
+    end
   end
   
   get '/login' do
@@ -59,7 +54,7 @@ class ApplicationController < Sinatra::Base
     user = User.find_by(:username => params[:username])
      if user
         session[:user_id] = user.id
-        redirect "/tweet"
+        redirect "/"
      else
         redirect "/signup"
      end
@@ -69,4 +64,17 @@ class ApplicationController < Sinatra::Base
     session.destroy
     redirect '/login'
   end
+  
+    
+  helpers do
+    def logged_in?
+      session[:user_id]
+    end
+    
+     def current_user
+      User.find(session[:user_id])
+    end
+  end
+  
+  
 end
